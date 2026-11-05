@@ -532,16 +532,17 @@ async function execCoachTool(name,args){
   return 'Onbekende tool.';
 }
 
+var MISTRAL_RELAY='https://gspuzicxsgrywnuwdttv.supabase.co/functions/v1/coach-f32b301f?k=9cd435a4205f482172c495a6';
 async function callMistral(key,messages,tools){
   var r;
   try{
-    r=await fetch('https://api.mistral.ai/v1/chat/completions',{
+    r=await fetch(MISTRAL_RELAY,{
       method:'POST',
-      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      headers:{'x-mistral-key':key,'Content-Type':'application/json'},
       body:JSON.stringify({model:'mistral-small-latest',messages:messages,tools:tools,tool_choice:'auto'})
     });
   }catch(e){
-    throw new Error('Kon api.mistral.ai niet bereiken (netwerkfout: '+e.message+'). Check je internetverbinding, of een adblocker/firewall die api.mistral.ai blokkeert.');
+    throw new Error('Kon de coach-relais (Supabase) niet bereiken (netwerkfout: '+e.message+'). Check je internetverbinding.');
   }
   var data;
   try{data=await r.json()}catch(e){throw new Error('Ongeldig antwoord van api.mistral.ai (HTTP '+r.status+')')}

@@ -533,12 +533,18 @@ async function execCoachTool(name,args){
 }
 
 async function callMistral(key,messages,tools){
-  var r=await fetch('https://api.mistral.ai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-    body:JSON.stringify({model:'mistral-small-latest',messages:messages,tools:tools,tool_choice:'auto'})
-  });
-  var data=await r.json();
+  var r;
+  try{
+    r=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'mistral-small-latest',messages:messages,tools:tools,tool_choice:'auto'})
+    });
+  }catch(e){
+    throw new Error('Kon api.mistral.ai niet bereiken (netwerkfout: '+e.message+'). Check je internetverbinding, of een adblocker/firewall die api.mistral.ai blokkeert.');
+  }
+  var data;
+  try{data=await r.json()}catch(e){throw new Error('Ongeldig antwoord van api.mistral.ai (HTTP '+r.status+')')}
   if(!r.ok)throw new Error(data.message||('HTTP '+r.status));
   return data;
 }
@@ -562,7 +568,9 @@ async function handleChat(text){
         for(var i=0;i<msg.tool_calls.length;i++){
           var tc=msg.tool_calls[i];
           var args={};try{args=JSON.parse(tc.function.arguments||'{}')}catch(e){}
-          var res=await execCoachTool(tc.function.name,args);
+          var res;
+          try{res=await execCoachTool(tc.function.name,args)}
+          catch(e){throw new Error('De actie "'+tc.function.name+'" op Supabase mislukte (netwerkfout: '+e.message+').')}
           messages.push({role:'tool',tool_call_id:tc.id,name:tc.function.name,content:res});
         }
         continue;

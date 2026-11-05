@@ -255,8 +255,12 @@ function coach(){
   if(quick.length)coachMsg('&#9889; Je hebt '+taal(quick.length).replace('1 taak','1 klusje')+' van hooguit 10 minuten: <b>doe die nú even</b>, dan zijn ze weg.',null,quick);
   if(overdue.length)coachMsg('&#9888; '+taal(overdue.length)+' over de deadline. Herschik ze vandaag of schrap ze.','warn',overdue);
   if(lingering.length)coachMsg('&#128170; '+taal(lingering.length)+' liggen al meer dan twee weken te wachten. Klik op <b>&#9986; Breek op</b> om ze in hapklare delen te splitsen.','warn',lingering);
-  if(open.length>15)coachMsg('&#128230; Je lijst telt '+taal(open.length)+'. Dat is veel &mdash; schrap, delegeer of stel uit wat niet hoeft.','warn');
-  if(!quick.length&&!overdue.length&&!lingering.length&&open.length<=15)coachMsg('&#128077; Prima lijst: '+taal(open.length)+', niets over deadline. Ga zo door!');
+  var dow=(now.getDay()+6)%7; // 0=maandag ... 6=zondag
+  var dagenResterend=dow<5?(5-dow):1; // ma 5 ... vr 1, weekend 1
+  var weekMax=5*dagenResterend;
+  var weekOpen=open.filter(function(t){var c=classify(t);return c=='today'||c=='week'});
+  if(weekOpen.length>weekMax)coachMsg('&#128230; Je hebt <b>'+weekOpen.length+'</b> taken open voor deze week (inclusief vandaag), terwijl het maximum nu <b>'+weekMax+'</b> is (5 per resterende werkdag). Schrap, delegeer of stel uit wat niet hoeft.','warn');
+  if(!quick.length&&!overdue.length&&!lingering.length&&weekOpen.length<=weekMax)coachMsg('&#128077; Prima lijst: '+taal(weekOpen.length)+' voor deze week, niets over deadline. Ga zo door!');
 }
 
 function fillThemeSelect(){

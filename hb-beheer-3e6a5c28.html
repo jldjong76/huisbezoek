@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Beheer · Huisbezoeken Immanuelkerk</title>
+<style>
+  :root {
+    --rood: #b20000;
+    --rood-donker: #8f0000;
+    --goud: #ccb76c;
+    --creme: #efeee9;
+    --navy: #34426c;
+    --tekst: #2b2b2b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: var(--creme); color: var(--tekst); min-height: 100vh; padding: 24px 16px 60px; }
+  .kaart { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(52,66,108,.12); }
+  header { background: linear-gradient(135deg, var(--navy), #233050); color: #fff; padding: 24px; text-align: center; border-bottom: 4px solid var(--goud); }
+  header h1 { font-size: 1.3rem; }
+  header p { font-size: .85rem; opacity: .85; margin-top: 4px; }
+  main { padding: 24px; }
+  .uitleg { font-size: .88rem; color: #666; margin-bottom: 16px; line-height: 1.5; }
+  .bezoek { border: 1.5px solid var(--goud); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .bezoek .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .bezoek .wanneer { font-family: Verdana, Arial, sans-serif; font-weight: bold; color: var(--rood); font-size: .95rem; }
+  .bezoek .naam { font-size: 1.1rem; margin-top: 4px; }
+  .bezoek .gegevens { font-size: .85rem; color: #555; margin-top: 6px; line-height: 1.5; }
+  .bezoek .opmerking { font-size: .85rem; color: var(--navy); margin-top: 6px; font-style: italic; }
+  .btn-annuleer { background: none; border: 1.5px solid var(--rood); color: var(--rood); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: .85rem; white-space: nowrap; }
+  .btn-annuleer:hover { background: var(--rood); color: #fff; }
+  .btn-annuleer:disabled { opacity: .5; cursor: wait; }
+  .leeg { text-align: center; color: #999; padding: 30px 10px; font-style: italic; }
+  .fout { color: var(--rood); font-size: .85rem; margin-top: 10px; min-height: 1em; }
+  .laad { text-align: center; color: #999; padding: 20px; font-style: italic; }
+  footer { text-align: center; padding: 14px; font-size: .75rem; color: #999; font-family: Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<div class="kaart">
+  <header>
+    <h1>Huisbezoeken · overzicht</h1>
+    <p>Beheerpagina Jeroen · Immanuelkerk Delft</p>
+  </header>
+  <main>
+    <p class="uitleg">Hieronder staan alle geplande huisbezoeken die via de app zijn ingepland. Klik op "Annuleren" om een huisbezoek af te zeggen: de afspraak verdwijnt uit de agenda, de aanvrager krijgt automatisch bericht, en de avond wordt weer beschikbaar voor anderen.</p>
+    <div id="lijst"><div class="laad">Laden…</div></div>
+    <div class="fout" id="fout"></div>
+  </main>
+  <footer>Beheeromgeving · niet delen</footer>
+</div>
+
+<script>
+const API = "https://gspuzicxsgrywnuwdttv.supabase.co/functions/v1/huisbezoek-9c3b7d51?k=b7e4c1f9a2d68304";
+const ADMIN = "adm-79ea0aaa2bad453d9f1e7c68";
+const MAANDEN = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
+const DAGNAMEN = ["zondag","maandag","dinsdag","woensdag","donderdag","vrijdag","zaterdag"];
+const esc = (s) => String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+function label(datum, tijd) {
+  const d = new Date(datum + "T12:00:00");
+  return DAGNAMEN[d.getDay()] + " " + d.getDate() + " " + MAANDEN[d.getMonth()] + " " + d.getFullYear() + " · " + tijd + " uur";
+}
+
+async function laad() {
+  document.getElementById("fout").textContent = "";
+  const box = document.getElementById("lijst");
+  box.innerHTML = '<div class="laad">Laden…</div>';
+  try {
+    const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "lijst", admin: ADMIN }) });
+    const d = await r.json();
+    if (!d.ok) throw 0;
+    if (!d.huisbezoeken.length) { box.innerHTML = '<div class="leeg">Er staan momenteel geen huisbezoeken gepland.</div>'; return; }
+    box.innerHTML = "";
+    for (const h of d.huisbezoeken) {
+      const el = document.createElement("div");
+      el.className = "bezoek";
+      el.innerHTML =
+        '<div class="top"><div class="wanneer">' + esc(label(h.datum, h.starttijd)) + '</div>' +
+        '<button class="btn-annuleer" data-id="' + esc(h.id) + '" data-naam="' + esc(h.naam) + '">Annuleren</button></div>' +
+        '<div class="naam">' + esc(h.naam) + '</div>' +
+        '<div class="gegevens">&#9742; ' + esc(h.telefoon) + ' &nbsp;·&nbsp; &#9993; ' + esc(h.email) + '</div>' +
+        (h.opmerking ? '<div class="opmerking">“' + esc(h.opmerking) + '”</div>' : "");
+      box.appendChild(el);
+    }
+    box.querySelectorAll(".btn-annuleer").forEach(b => b.addEventListener("click", async () => {
+      const naam = b.dataset.naam;
+      if (!confirm("Weet u het zeker?\n\nHet huisbezoek van " + naam + " wordt geannuleerd. De aanvrager ontvangt hiervan automatisch bericht en de avond komt weer vrij.")) return;
+      b.disabled = true; b.textContent = "Bezig…";
+      try {
+        const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "annuleer", admin: ADMIN, id: b.dataset.id }) });
+        const d = await r.json();
+        if (!d.ok) { document.getElementById("fout").textContent = d.error || "Annuleren mislukt. Probeer opnieuw."; b.disabled = false; b.textContent = "Annuleren"; return; }
+        laad();
+      } catch (e) {
+        document.getElementById("fout").textContent = "Verbindingsfout. Probeer opnieuw.";
+        b.disabled = false; b.textContent = "Annuleren";
+      }
+    }));
+  } catch (e) {
+    box.innerHTML = "";
+    document.getElementById("fout").textContent = "Kon het overzicht niet laden. Ververs de pagina.";
+  }
+}
+
+laad();
+</script>
+</body>
+</html>

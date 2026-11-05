@@ -72,6 +72,11 @@
     border-radius: 8px; font-family: inherit; background: #fff;
   }
   input:focus { outline: none; border-color: var(--rood); }
+  textarea {
+    width: 100%; padding: 12px; font-size: 16px; border: 1.5px solid #ccc;
+    border-radius: 8px; font-family: inherit; background: #fff; resize: vertical; min-height: 70px;
+  }
+  textarea:focus { outline: none; border-color: var(--rood); }
   .fout { color: var(--rood); font-size: .85rem; margin-top: 10px; min-height: 1em; }
   .verzend {
     width: 100%; margin-top: 18px; padding: 14px; font-size: 1.05rem;
@@ -125,6 +130,8 @@
         <input id="telefoon" type="tel" maxlength="30" autocomplete="tel">
         <label for="email">E-mailadres</label>
         <input id="email" type="email" maxlength="120" autocomplete="email">
+        <label for="opmerking">Opmerkingen (optioneel)</label>
+        <textarea id="opmerking" maxlength="500" placeholder="Bijv. fijn als je met onze kring mee-eet, vanaf 18:00"></textarea>
       </div>
       <div class="fout" id="fout"></div>
       <button class="verzend" id="verzend">Afspraak maken</button>
@@ -200,6 +207,7 @@ document.getElementById("verzend").addEventListener("click", async () => {
   const naam = document.getElementById("naam").value.trim();
   const telefoon = document.getElementById("telefoon").value.trim();
   const email = document.getElementById("email").value.trim();
+  const opmerking = document.getElementById("opmerking").value.trim();
   if (!gekozenDatum) { fout.textContent = "Kies eerst een avond."; return; }
   if (!gekozenTijd) { fout.textContent = "Kies een begintijd."; return; }
   if (!naam) { fout.textContent = "Vul je naam (of kringnaam) in."; return; }
@@ -209,7 +217,7 @@ document.getElementById("verzend").addEventListener("click", async () => {
   knop.disabled = true; knop.textContent = "Bezig…";
   try {
     const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "boek", datum: gekozenDatum, starttijd: gekozenTijd, naam, telefoon, email }) });
+      body: JSON.stringify({ action: "boek", datum: gekozenDatum, starttijd: gekozenTijd, naam, telefoon, email, opmerking }) });
     const d = await r.json();
     if (d.ok) {
       const dt = new Date(gekozenDatum + "T12:00:00");
